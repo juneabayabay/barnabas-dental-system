@@ -55,6 +55,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -82,16 +83,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "database_db"),
-        "USER": os.environ.get("DB_USER", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "password"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
+def _db_ssl_options() -> dict:
+    if os.environ.get("DB_SSL_REQUIRE", "False").lower() in ("true", "1", "yes"):
+        return {"sslmode": os.environ.get("DB_SSLMODE", "require")}
+    return {}
+
+
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=_database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+        ),
     }
-}
+    if _db_ssl_options():
+        DATABASES["default"].setdefault("OPTIONS", {})
+        DATABASES["default"]["OPTIONS"].update(_db_ssl_options())
+else:
+    _db_options = _db_ssl_options()
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "database_db"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", "password"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            **({"OPTIONS": _db_options} if _db_options else {}),
+        },
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -114,6 +138,35 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in (_csrf_origins.split(",") if _csrf_origins else CORS_ALLOWED_ORIGINS)
+    if origin.strip()
+]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "False").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 AUTH_USER_MODEL = "users.User"
 
