@@ -40,6 +40,10 @@ function dentistPageRoutes(prefix) {
         <Route path={`${prefix}/schedule`} element={<ReceptionistSchedulePage />} />
       </Route>
 
+      <Route element={<PermissionRoute permission="appointments.create" />}>
+        <Route path={`${prefix}/appointments/book`} element={<ReceptionistBookPage />} />
+      </Route>
+
       <Route element={<PermissionRoute permission="patients.view" />}>
         <Route path={`${prefix}/patients`} element={<PatientListPage />} />
         <Route path={`${prefix}/patients/:id`} element={<DentistPatientDetailPage />} />

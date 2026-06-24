@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, serializers, status
 from rest_framework.response import Response
@@ -94,9 +95,14 @@ class DownPaymentListCreateView(StaffPermissionMixin, generics.ListCreateAPIView
 class DownPaymentApproveView(StaffPermissionMixin, APIView):
     staff_permissions = {"POST": "billing.approve"}
 
+    @transaction.atomic
     def post(self, request, pk):
         try:
-            record = DownPaymentRequest.objects.select_related("patient").get(pk=pk)
+            record = (
+                DownPaymentRequest.objects.select_for_update()
+                .select_related("patient")
+                .get(pk=pk)
+            )
         except DownPaymentRequest.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -131,9 +137,14 @@ class DownPaymentApproveView(StaffPermissionMixin, APIView):
 class DownPaymentRejectView(StaffPermissionMixin, APIView):
     staff_permissions = {"POST": "billing.approve"}
 
+    @transaction.atomic
     def post(self, request, pk):
         try:
-            record = DownPaymentRequest.objects.select_related("patient").get(pk=pk)
+            record = (
+                DownPaymentRequest.objects.select_for_update()
+                .select_related("patient")
+                .get(pk=pk)
+            )
         except DownPaymentRequest.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 

@@ -79,6 +79,13 @@ class StaffAppointmentUpdateSerializer(serializers.ModelSerializer):
             and instance.status == Appointment.Status.CONFIRMED
         ):
             notify_appointment_confirmed(instance)
+        if (
+            old_status != instance.status
+            and instance.status == Appointment.Status.NO_SHOW
+        ):
+            from billing.services import post_no_show_fee
+
+            post_no_show_fee(instance)
         return instance
 
 

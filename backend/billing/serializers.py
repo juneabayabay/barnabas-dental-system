@@ -19,6 +19,7 @@ class BillingRecordSerializer(serializers.ModelSerializer):
             "total_amount",
             "amount_paid",
             "balance",
+            "payment_method",
             "payment_status",
             "appointment",
             "appointment_date",

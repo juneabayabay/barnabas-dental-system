@@ -1,13 +1,20 @@
 import LoadingSpinner from './LoadingSpinner';
 
-export default function DataTable({ columns, rows, keyField = 'id', loading, emptyMessage = 'No records found.' }) {
+export default function DataTable({
+  columns,
+  rows,
+  keyField = 'id',
+  loading,
+  emptyMessage = 'No records found.',
+  renderMobileCard,
+}) {
   if (loading) return <LoadingSpinner />;
 
   if (!rows?.length) {
     return <p className="py-8 text-center text-sm text-slate-500">{emptyMessage}</p>;
   }
 
-  return (
+  const table = (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
         <thead className="bg-slate-50">
@@ -35,5 +42,20 @@ export default function DataTable({ columns, rows, keyField = 'id', loading, emp
         </tbody>
       </table>
     </div>
+  );
+
+  if (!renderMobileCard) {
+    return table;
+  }
+
+  return (
+    <>
+      <div className="space-y-3 lg:hidden">
+        {rows.map((row) => (
+          <div key={row[keyField]}>{renderMobileCard(row)}</div>
+        ))}
+      </div>
+      <div className="hidden lg:block">{table}</div>
+    </>
   );
 }

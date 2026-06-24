@@ -82,11 +82,16 @@ export default function RolePermissionsPage() {
               ) : (
                 <ul className="space-y-2">
                   {rolePermissions.map((rp) => (
-                    <li key={rp.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-2 text-sm">
-                      <span>{rp.permission?.codename || rp.permission?.name}</span>
+                    <li
+                      key={rp.id}
+                      className="flex flex-col gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <span className="min-w-0 break-words">
+                        {rp.permission?.codename || rp.permission?.name}
+                      </span>
                       <button
                         type="button"
-                        className="btn-ghost btn-sm text-red-600"
+                        className="btn-ghost btn-sm shrink-0 self-start text-red-600 sm:self-auto"
                         onClick={() => handleRemove(rp.id)}
                         disabled={removeMutation.isPending}
                       >
@@ -108,11 +113,16 @@ export default function RolePermissionsPage() {
                     <h4 className="mb-2 text-sm font-medium uppercase text-slate-500">{module}</h4>
                     <ul className="space-y-1">
                       {perms.filter((p) => !assignedIds.has(p.id)).map((p) => (
-                        <li key={p.id} className="flex items-center justify-between rounded-lg px-2 py-1 text-sm hover:bg-slate-50">
-                          <span>{p.codename} — {p.name}</span>
+                        <li
+                          key={p.id}
+                          className="flex flex-col gap-2 rounded-lg px-2 py-2 text-sm hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <span className="min-w-0 break-words">
+                            {p.codename} — {p.name}
+                          </span>
                           <button
                             type="button"
-                            className="btn-outline btn-sm"
+                            className="btn-outline btn-sm shrink-0 self-start sm:self-auto"
                             onClick={() => handleAssign(p.id)}
                             disabled={assignMutation.isPending}
                           >

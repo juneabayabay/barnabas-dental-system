@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import AlertBanner from '../../components/common/AlertBanner';
-import ErrorMessage from '../../components/common/ErrorMessage';
+import { FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import PatientAuthButton from '../../components/auth/patient/PatientAuthButton';
+import PatientAuthDivider from '../../components/auth/patient/PatientAuthDivider';
+import PatientAuthField from '../../components/auth/patient/PatientAuthField';
+import PatientAuthShell from '../../components/auth/patient/PatientAuthShell';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useAuth } from '../../hooks/useAuth';
 import { getSafeDashboardPath } from '../../utils/auth';
 import { hasRole, isClinicStaff } from '../../utils/permissions';
-import { APP_NAME, DASHBOARD_PATHS, ROLES } from '../../utils/constants';
+import { DASHBOARD_PATHS, ROLES } from '../../utils/constants';
 import { setLoginPortal } from '../../utils/storage';
 
 export default function PatientLoginPage() {
@@ -27,7 +30,6 @@ export default function PatientLoginPage() {
     }
   }, [location.pathname, location.state?.registrationSuccess, navigate]);
 
-  // Clear corrupt sessions (authenticated but no valid role)
   useEffect(() => {
     if (!authLoading && isAuthenticated && user && !hasRole(user, ROLES.USER) && !isClinicStaff(user)) {
       logout();
@@ -74,55 +76,62 @@ export default function PatientLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-sky-100 p-4">
-      <div className="grid w-full max-w-4xl gap-8 lg:grid-cols-2">
-        <div className="hidden flex-col justify-center lg:flex">
-          <h1 className="text-3xl font-bold text-slate-900">🦷 {APP_NAME}</h1>
-          <p className="mt-2 text-sky-600">Patient Portal</p>
-          <ul className="mt-6 space-y-2 text-slate-600">
-            <li>• Book appointments online</li>
-            <li>• Pencil booking (4-hour hold)</li>
-            <li>• View billing &amp; notifications</li>
-            <li>• Join the waiting list</li>
-          </ul>
-        </div>
-        <form className="card" onSubmit={handleSubmit}>
-          <h2 className="text-2xl font-bold text-slate-900">Sign in</h2>
-          <p className="mt-1 text-sm text-slate-500">Use your patient account to access the dashboard.</p>
-          <div className="mt-6 space-y-4">
-            <ErrorMessage message={error} />
-            {registrationAlert && (
-              <AlertBanner
-                variant="success"
-                message={
-                  <>
-                    <span className="block font-semibold">Account Created Successfully</span>
-                    <span className="mt-1 block">Please sign in using your email and password.</span>
-                  </>
-                }
-                onDismiss={() => setRegistrationAlert(false)}
-              />
-            )}
-            <label className="label">
-              Email
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </label>
-            <label className="label">
-              Password
-              <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </label>
-            <p className="text-sm">
-              <Link to="/forgot-password" className="text-sky-600 hover:text-sky-800">Forgot password?</Link>
-            </p>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Go to Dashboard'}
-            </button>
-            <p className="text-center text-sm text-slate-600">
-              New patient? <Link to="/register" className="text-sky-600 hover:text-sky-800">Create an account</Link>
-            </p>
+    <PatientAuthShell>
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="patient-auth-alert patient-auth-alert--error" role="alert">
+            {error}
           </div>
-        </form>
-      </div>
-    </div>
+        )}
+
+        {registrationAlert && (
+          <div className="patient-auth-alert patient-auth-alert--success" role="status">
+            <span className="block font-semibold">Account Created Successfully</span>
+            <span className="mt-1 block">Please sign in using your email and password.</span>
+            <button
+              type="button"
+              onClick={() => setRegistrationAlert(false)}
+              className="mt-2 text-xs font-semibold underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <PatientAuthField
+          icon={FaEnvelope}
+          label="Email"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+
+        <PatientAuthField
+          icon={FaLock}
+          label="Password"
+          name="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          showToggle
+        />
+
+        <div className="patient-auth-forgot">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </div>
+
+        <PatientAuthButton loading={loading} icon={FaSignInAlt}>
+          {loading ? 'Signing in...' : 'Go to Dashboard'}
+        </PatientAuthButton>
+      </form>
+
+      <PatientAuthDivider />
+      <p className="patient-auth-switch">
+        New patient? <Link to="/register">Create an account</Link>
+      </p>
+    </PatientAuthShell>
   );
 }

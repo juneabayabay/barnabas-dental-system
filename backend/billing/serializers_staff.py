@@ -66,6 +66,7 @@ class StaffBillingRecordCreateSerializer(StaffBillingAmountMixin, serializers.Mo
             "description",
             "total_amount",
             "amount_paid",
+            "payment_method",
         ]
 
     def validate_patient_id(self, value):
@@ -116,7 +117,15 @@ class StaffBillingRecordCreateSerializer(StaffBillingAmountMixin, serializers.Mo
 class StaffBillingRecordUpdateSerializer(StaffBillingAmountMixin, serializers.ModelSerializer):
     class Meta:
         model = BillingRecord
-        fields = ["description", "total_amount", "amount_paid", "payment_status"]
+        fields = ["description", "total_amount", "amount_paid", "payment_method", "payment_status"]
+
+    def validate_payment_method(self, value):
+        if value == "":
+            return value
+        allowed = {choice[0] for choice in BillingRecord.PaymentMethod.choices}
+        if value not in allowed:
+            raise serializers.ValidationError("Invalid payment method.")
+        return value
 
     def validate_payment_status(self, value):
         allowed = {choice[0] for choice in BillingRecord.PaymentStatus.choices}

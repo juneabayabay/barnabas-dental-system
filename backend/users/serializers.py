@@ -92,6 +92,16 @@ class UserRoleSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "assigned_by", "assigned_at"]
 
+    def validate_role_id(self, value):
+        if value.slug == Role.ADMIN:
+            request = self.context.get("request")
+            actor = getattr(request, "user", None)
+            if not actor or not actor.is_superuser:
+                raise serializers.ValidationError(
+                    "Only a superuser can assign the admin role."
+                )
+        return value
+
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)

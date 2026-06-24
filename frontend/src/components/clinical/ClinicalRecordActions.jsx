@@ -43,12 +43,12 @@ export default function ClinicalRecordActions({
           <input
             key={f.name}
             type={f.type || 'text'}
-            className="input py-1 text-xs"
+            className="input w-full"
             value={form[f.name]}
             onChange={(e) => setForm((prev) => ({ ...prev, [f.name]: e.target.value }))}
           />
         ))}
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-primary btn-sm" onClick={handleSave}>
             Save
           </button>
@@ -62,14 +62,14 @@ export default function ClinicalRecordActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       {canUpdate && (
-        <button type="button" className="text-xs text-sky-600" onClick={() => setEditing(true)}>
+        <button type="button" className="btn-outline btn-sm" onClick={() => setEditing(true)}>
           Edit
         </button>
       )}
       {canDelete && (
-        <button type="button" className="text-xs text-red-600" onClick={handleDelete}>
+        <button type="button" className="btn-danger btn-sm" onClick={handleDelete}>
           Delete
         </button>
       )}

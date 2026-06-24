@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import DataTable from '../../components/common/DataTable';
+import StaffAppointmentCard from '../../components/staff/StaffAppointmentCard';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PageHeader from '../../components/common/PageHeader';
 import AlertBanner from '../../components/common/AlertBanner';
@@ -197,6 +198,15 @@ export default function AppointmentsPage() {
           columns={columns}
           rows={rows}
           emptyMessage="No appointments match your filters."
+          renderMobileCard={(row) => (
+            <StaffAppointmentCard
+              appointment={row}
+              onStatusChange={handleStatusChange}
+              onCancel={handleCancel}
+              updating={updateMutation.isPending}
+              cancelling={cancelMutation.isPending}
+            />
+          )}
         />
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </QueryState>

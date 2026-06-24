@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DataTable from '../../components/common/DataTable';
+import PatientDetailAppointmentCard from '../../components/staff/PatientDetailAppointmentCard';
+import PatientDetailBillingCard from '../../components/staff/PatientDetailBillingCard';
+import {
+  TreatmentRecordCard,
+  OrthodonticRecordCard,
+  SurgicalRecordCard,
+} from '../../components/staff/PatientDetailClinicalCard';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PageHeader from '../../components/common/PageHeader';
 import AlertBanner from '../../components/common/AlertBanner';
@@ -176,21 +183,23 @@ export default function AdminPatientDetailPage() {
         error={patient.error}
         onRetry={() => patient.refetch()}
       >
-        <div className="flex gap-2 border-b border-slate-200">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`border-b-2 px-4 py-2 text-sm font-medium ${
-                tab === t.id
-                  ? 'border-sky-600 text-sky-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="-mx-4 overflow-x-auto border-b border-slate-200 px-4 md:mx-0 md:px-0 [scrollbar-width:thin]">
+          <div className="flex w-max min-w-full gap-1 sm:gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`shrink-0 border-b-2 px-3 py-2 text-sm font-medium sm:px-4 ${
+                  tab === t.id
+                    ? 'border-sky-600 text-sky-700'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {tab === 'profile' && p && (
@@ -311,6 +320,15 @@ export default function AdminPatientDetailPage() {
               ]}
               rows={treatments.data || []}
               emptyMessage="No treatment records."
+              renderMobileCard={(r) => (
+                <TreatmentRecordCard
+                  record={r}
+                  canUpdate={can('treatments.update')}
+                  canDelete={can('treatments.delete')}
+                  onUpdate={(data) => updateTreatment.mutateAsync({ id: r.id, data })}
+                  onDelete={() => deleteTreatment.mutateAsync(r.id)}
+                />
+              )}
             />
           </QueryState>
         )}
@@ -365,6 +383,15 @@ export default function AdminPatientDetailPage() {
               ]}
               rows={orthodontic.data || []}
               emptyMessage="No orthodontic records."
+              renderMobileCard={(r) => (
+                <OrthodonticRecordCard
+                  record={r}
+                  canUpdate={can('treatments.update')}
+                  canDelete={can('treatments.delete')}
+                  onUpdate={(data) => updateOrthodontic.mutateAsync({ id: r.id, data })}
+                  onDelete={() => deleteOrthodontic.mutateAsync(r.id)}
+                />
+              )}
             />
           </QueryState>
         )}
@@ -422,6 +449,15 @@ export default function AdminPatientDetailPage() {
               ]}
               rows={surgical.data || []}
               emptyMessage="No surgical records."
+              renderMobileCard={(r) => (
+                <SurgicalRecordCard
+                  record={r}
+                  canUpdate={can('treatments.update')}
+                  canDelete={can('treatments.delete')}
+                  onUpdate={(data) => updateSurgical.mutateAsync({ id: r.id, data })}
+                  onDelete={() => deleteSurgical.mutateAsync(r.id)}
+                />
+              )}
             />
           </QueryState>
         )}
@@ -453,6 +489,7 @@ export default function AdminPatientDetailPage() {
               columns={appointmentColumns}
               rows={apptRows}
               emptyMessage="No appointments found for this patient."
+              renderMobileCard={(r) => <PatientDetailAppointmentCard appointment={r} />}
             />
           </QueryState>
         )}
@@ -468,6 +505,7 @@ export default function AdminPatientDetailPage() {
               columns={billingColumns}
               rows={billRows}
               emptyMessage="No billing records found for this patient."
+              renderMobileCard={(r) => <PatientDetailBillingCard record={r} />}
             />
           </QueryState>
         )}

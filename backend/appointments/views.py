@@ -156,8 +156,14 @@ class AppointmentCancelView(APIView):
         appointment.status = Appointment.Status.CANCELLED
         appointment.cancellation_fee = fee
         appointment.save(update_fields=["status", "cancellation_fee", "updated_at"])
+
+        from billing.services import post_cancellation_fee
+
+        post_cancellation_fee(appointment)
+
         notify_appointment_cancelled(appointment, fee)
-        notify_waiting_list_for_freed_slot(appointment.appointment_date)
+        procedure_ids = list(appointment.procedures.values_list("id", flat=True))
+        notify_waiting_list_for_freed_slot(appointment.appointment_date, procedure_ids)
         return Response(AppointmentSerializer(appointment).data)
 
 

@@ -4,6 +4,8 @@ from django.dispatch import receiver
 from appointments.models import Appointment, ClinicSetting
 from billing.models import BillingRecord, DownPaymentRequest
 
+from users.email_utils import SENSITIVE_SETTING_KEYS
+
 from .models import AuditLog
 from .services import log_audit
 
@@ -57,13 +59,16 @@ def _audit_billing(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ClinicSetting)
 def _audit_setting(sender, instance, created, **kwargs):
+    value = instance.value
+    if instance.key in SENSITIVE_SETTING_KEYS:
+        value = "[redacted]"
     log_audit(
         action=AuditLog.Action.CREATE if created else AuditLog.Action.UPDATE,
         module="settings",
         resource_type="clinic_setting",
         resource_id=instance.key,
         summary=f"Setting '{instance.key}' updated",
-        changes={"value": instance.value},
+        changes={"value": value},
     )
 
 

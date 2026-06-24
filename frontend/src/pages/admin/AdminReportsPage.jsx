@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PageHeader from '../../components/common/PageHeader';
 import QueryState from '../../components/common/QueryState';
+import BarChart from '../../components/reports/BarChart';
 import { useReports } from '../../hooks/useReports';
 import { formatDate, formatPrice } from '../../utils/formatters';
 
@@ -10,31 +11,6 @@ const PERIODS = [
   { value: 'monthly', label: 'This month' },
   { value: 'quarterly', label: 'This quarter' },
 ];
-
-function BarChart({ data, valueKey, labelKey = 'date' }) {
-  if (!data?.length) return null;
-  const max = Math.max(...data.map((d) => Number(d[valueKey] || 0)), 1);
-  return (
-    <div className="flex items-end gap-1 h-40">
-      {data.map((row) => {
-        const val = Number(row[valueKey] || 0);
-        const height = `${Math.max(4, (val / max) * 100)}%`;
-        return (
-          <div key={row[labelKey]} className="flex flex-1 flex-col items-center gap-1">
-            <div
-              className="w-full rounded-t bg-sky-500 transition-all"
-              style={{ height }}
-              title={`${row[labelKey]}: ${val}`}
-            />
-            <span className="text-[10px] text-slate-400 rotate-0 truncate w-full text-center">
-              {row[labelKey]?.slice(5)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function AdminReportsPage() {
   const [period, setPeriod] = useState('monthly');
@@ -94,7 +70,7 @@ export default function AdminReportsPage() {
             {data.daily_breakdown?.length > 0 && (
               <div className="card space-y-4">
                 <h2 className="font-semibold text-slate-900">Daily revenue</h2>
-                <BarChart data={data.daily_breakdown} valueKey="revenue" />
+                <BarChart data={data.daily_breakdown} valueKey="revenue" formatValue={formatPrice} />
               </div>
             )}
 

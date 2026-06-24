@@ -5,29 +5,17 @@ from django.core.mail import EmailMultiAlternatives, get_connection
 
 logger = logging.getLogger(__name__)
 
+# Legacy keys — no longer used for credential storage (env vars only).
 SMTP_USER_KEY = "smtp_gmail_user"
 SMTP_PASSWORD_KEY = "smtp_gmail_app_password"
 
-
-def _get_clinic_setting(key, default=""):
-    try:
-        from appointments.clinic_config import get_setting
-
-        return get_setting(key, default) or default
-    except Exception:
-        return default
+SENSITIVE_SETTING_KEYS = frozenset({SMTP_USER_KEY, SMTP_PASSWORD_KEY})
 
 
 def get_smtp_credentials():
-    """SMTP username/password from .env first, then clinic settings in the database."""
+    """SMTP username/password from environment variables only."""
     user = (settings.EMAIL_HOST_USER or "").strip()
     password = (settings.EMAIL_HOST_PASSWORD or "").strip()
-
-    if not user:
-        user = _get_clinic_setting(SMTP_USER_KEY, "").strip()
-    if not password:
-        password = _get_clinic_setting(SMTP_PASSWORD_KEY, "").strip()
-
     return user, password
 
 
@@ -51,9 +39,8 @@ def is_smtp_ready():
 
 def smtp_setup_hint():
     return (
-        "Gmail is not configured. Sign in as admin → Settings → Email tab, enter your "
-        "Gmail address and 16-character App Password (Google Account → Security → "
-        "App passwords), then save."
+        "Email is not configured. Set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD "
+        "in the server environment (see backend/.env.example)."
     )
 
 

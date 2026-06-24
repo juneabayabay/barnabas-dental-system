@@ -10,6 +10,11 @@ class BillingRecord(models.Model):
         PARTIAL = "partial", "Partial"
         PAID = "paid", "Paid"
 
+    class PaymentMethod(models.TextChoices):
+        CASH = "cash", "Cash"
+        GCASH = "gcash", "GCash"
+        OTHER = "other", "Other"
+
     patient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -25,6 +30,12 @@ class BillingRecord(models.Model):
     description = models.CharField(max_length=255, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        blank=True,
+        default="",
+    )
     payment_status = models.CharField(
         max_length=20,
         choices=PaymentStatus.choices,

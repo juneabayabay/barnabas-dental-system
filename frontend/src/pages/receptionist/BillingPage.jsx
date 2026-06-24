@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import DataTable from '../../components/common/DataTable';
+import StaffBillingCard from '../../components/staff/StaffBillingCard';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import PageHeader from '../../components/common/PageHeader';
 import AlertBanner from '../../components/common/AlertBanner';
@@ -25,6 +26,7 @@ export default function BillingPage() {
     description: '',
     total_amount: '',
     amount_paid: '0',
+    payment_method: 'cash',
   });
 
   const { page, setPage } = useListPage();
@@ -52,10 +54,11 @@ export default function BillingPage() {
         description: form.description,
         total_amount: form.total_amount,
         amount_paid: form.amount_paid || '0',
+        payment_method: form.payment_method,
       });
       setMessage('Billing record created.');
       setShowForm(false);
-      setForm({ patient_id: '', description: '', total_amount: '', amount_paid: '0' });
+      setForm({ patient_id: '', description: '', total_amount: '', amount_paid: '0', payment_method: 'cash' });
     } catch (err) {
       setError(parseApiError(err));
     }
@@ -86,6 +89,11 @@ export default function BillingPage() {
           : formatDate(row.created_at?.slice(0, 10)),
     },
     { key: 'description', label: 'Description' },
+    {
+      key: 'payment_method',
+      label: 'Method',
+      render: (row) => (row.payment_method ? row.payment_method.toUpperCase() : '—'),
+    },
     {
       key: 'total',
       label: 'Total',
@@ -205,6 +213,18 @@ export default function BillingPage() {
               onChange={(e) => setForm((f) => ({ ...f, amount_paid: e.target.value }))}
             />
           </label>
+          <label className="label">
+            Payment method
+            <select
+              className="input"
+              value={form.payment_method}
+              onChange={(e) => setForm((f) => ({ ...f, payment_method: e.target.value }))}
+            >
+              <option value="cash">Cash</option>
+              <option value="gcash">GCash</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
           <div className="sm:col-span-2">
             <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
               Create record
@@ -246,7 +266,18 @@ export default function BillingPage() {
         error={billing.error}
         onRetry={() => billing.refetch()}
       >
-        <DataTable columns={columns} rows={rows} emptyMessage="No billing records found." />
+        <DataTable
+          columns={columns}
+          rows={rows}
+          emptyMessage="No billing records found."
+          renderMobileCard={(row) => (
+            <StaffBillingCard
+              record={row}
+              onPaymentUpdate={handlePaymentUpdate}
+              updating={updateMutation.isPending}
+            />
+          )}
+        />
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </QueryState>
     </div>

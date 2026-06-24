@@ -3,8 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.email_utils import (
-    SMTP_PASSWORD_KEY,
-    SMTP_USER_KEY,
+    SENSITIVE_SETTING_KEYS,
     get_smtp_credentials,
     is_smtp_ready,
     send_clinic_email,
@@ -15,7 +14,7 @@ from .mixins import StaffPermissionMixin
 from .models import ClinicSetting, Procedure
 from .serializers_settings import ClinicSettingSerializer, StaffProcedureSerializer
 
-SMTP_SETTING_KEYS = {SMTP_USER_KEY, SMTP_PASSWORD_KEY}
+SMTP_SETTING_KEYS = SENSITIVE_SETTING_KEYS
 
 
 class ClinicSettingsListView(StaffPermissionMixin, APIView):
@@ -36,6 +35,11 @@ class ClinicSettingsListView(StaffPermissionMixin, APIView):
             key = item.get("key")
             if not key:
                 continue
+            if key in SMTP_SETTING_KEYS:
+                return Response(
+                    {"detail": "SMTP credentials must be set via server environment variables."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
                 setting = ClinicSetting.objects.get(key=key)
             except ClinicSetting.DoesNotExist:
@@ -64,7 +68,15 @@ class ClinicSettingDetailView(StaffPermissionMixin, generics.RetrieveUpdateAPIVi
     lookup_field = "key"
 
     def get_queryset(self):
-        return ClinicSetting.objects.all()
+        return ClinicSetting.objects.exclude(key__in=SMTP_SETTING_KEYS)
+
+    def update(self, request, *args, **kwargs):
+        if kwargs.get("key") in SMTP_SETTING_KEYS or request.data.get("key") in SMTP_SETTING_KEYS:
+            return Response(
+                {"detail": "SMTP credentials must be set via server environment variables."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().update(request, *args, **kwargs)
 
 
 class StaffProcedureListCreateView(StaffPermissionMixin, generics.ListCreateAPIView):
@@ -92,9 +104,10 @@ class StaffProcedureDetailView(StaffPermissionMixin, generics.RetrieveUpdateDest
 
 
 class EmailSettingsView(StaffPermissionMixin, APIView):
+    """Read-only SMTP status. Credentials are configured via environment variables."""
+
     staff_permissions = {
         "GET": "settings.view",
-        "PATCH": "settings.manage",
         "POST": "settings.manage",
     }
 
@@ -105,35 +118,24 @@ class EmailSettingsView(StaffPermissionMixin, APIView):
                 "smtp_user": user,
                 "password_configured": bool(password),
                 "smtp_ready": is_smtp_ready(),
+                "configured_via": "environment",
+                "setup_hint": smtp_setup_hint(),
             }
         )
 
     def patch(self, request):
-        smtp_user = (request.data.get("smtp_user") or "").strip()
-        smtp_app_password = (request.data.get("smtp_app_password") or "").strip()
-
-        if smtp_user:
-            ClinicSetting.objects.update_or_create(
-                key=SMTP_USER_KEY,
-                defaults={
-                    "value": smtp_user,
-                    "description": "Gmail address for sending clinic emails",
-                },
-            )
-
-        if smtp_app_password:
-            ClinicSetting.objects.update_or_create(
-                key=SMTP_PASSWORD_KEY,
-                defaults={
-                    "value": smtp_app_password,
-                    "description": "Google App Password for Gmail SMTP",
-                },
-            )
-
-        return self.get(request)
+        return Response(
+            {
+                "detail": (
+                    "SMTP credentials cannot be saved in the app. "
+                    "Set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in the server environment."
+                )
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     def post(self, request):
-        """Send a test email to verify Gmail SMTP."""
+        """Send a test email to verify SMTP configuration."""
         if not is_smtp_ready():
             return Response(
                 {"detail": smtp_setup_hint()},
@@ -149,7 +151,7 @@ class EmailSettingsView(StaffPermissionMixin, APIView):
 
         sent, error = send_clinic_email(
             subject="Barnabas Dental — email test",
-            text_body="If you receive this in Gmail, password reset emails will work.",
+            text_body="If you receive this message, clinic email notifications are working.",
             recipient=recipient,
         )
         if not sent:

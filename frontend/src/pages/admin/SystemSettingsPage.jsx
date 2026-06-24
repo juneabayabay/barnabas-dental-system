@@ -4,11 +4,11 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import AlertBanner from '../../components/common/AlertBanner';
 import QueryState from '../../components/common/QueryState';
 import DataTable from '../../components/common/DataTable';
+import ProcedureCard from '../../components/staff/ProcedureCard';
 import {
   useClinicSettings,
   useUpdateClinicSettings,
   useEmailSettings,
-  useUpdateEmailSettings,
   useTestEmailSettings,
   useStaffProcedures,
   useCreateStaffProcedure,
@@ -23,14 +23,13 @@ export default function SystemSettingsPage() {
   const [error, setError] = useState('');
   const [settingsDraft, setSettingsDraft] = useState({});
   const [procForm, setProcForm] = useState(null);
-  const [emailForm, setEmailForm] = useState({ smtp_user: '', smtp_app_password: '', test_email: '' });
+  const [emailForm, setEmailForm] = useState({ test_email: '' });
   const { can } = usePermission();
 
   const settings = useClinicSettings();
   const emailSettings = useEmailSettings();
   const procedures = useStaffProcedures();
   const updateSettings = useUpdateClinicSettings();
-  const updateEmailSettings = useUpdateEmailSettings();
   const testEmailSettings = useTestEmailSettings();
   const createProc = useCreateStaffProcedure();
   const updateProc = useUpdateStaffProcedure();
@@ -52,30 +51,11 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const handleSaveEmail = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const payload = {};
-      if (emailForm.smtp_user.trim()) payload.smtp_user = emailForm.smtp_user.trim();
-      if (emailForm.smtp_app_password.trim()) payload.smtp_app_password = emailForm.smtp_app_password.trim();
-      if (!payload.smtp_user && !payload.smtp_app_password) {
-        setError('Enter your Gmail address and App Password.');
-        return;
-      }
-      await updateEmailSettings.mutateAsync(payload);
-      setMessage('Gmail settings saved. Password reset emails can now be sent.');
-      setEmailForm((f) => ({ ...f, smtp_app_password: '' }));
-    } catch (err) {
-      setError(parseApiError(err));
-    }
-  };
-
   const handleTestEmail = async () => {
     setError('');
     try {
       const res = await testEmailSettings.mutateAsync(
-        emailForm.test_email.trim() || emailForm.smtp_user.trim() || emailSettings.data?.smtp_user
+        emailForm.test_email.trim() || emailSettings.data?.smtp_user
       );
       setMessage(res.data.detail || 'Test email sent.');
     } catch (err) {
@@ -99,6 +79,17 @@ export default function SystemSettingsPage() {
     }
   };
 
+  const handleDeactivateProcedure = async (procedure) => {
+    if (!window.confirm(`Deactivate procedure "${procedure.name}"?`)) return;
+    setError('');
+    try {
+      await updateProc.mutateAsync({ id: procedure.id, data: { is_active: false } });
+      setMessage('Procedure deactivated.');
+    } catch (err) {
+      setError(parseApiError(err));
+    }
+  };
+
   const procColumns = [
     { key: 'name', label: 'Name' },
     { key: 'category', label: 'Category' },
@@ -115,24 +106,15 @@ export default function SystemSettingsPage() {
             key: 'actions',
             label: '',
             render: (r) => (
-              <div className="flex gap-2">
-                <button type="button" className="text-sm text-sky-600" onClick={() => setProcForm({ ...r })}>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn-outline btn-sm" onClick={() => setProcForm({ ...r })}>
                   Edit
                 </button>
                 {r.is_active && (
                   <button
                     type="button"
-                    className="text-sm text-red-600"
-                    onClick={async () => {
-                      if (!window.confirm(`Deactivate procedure "${r.name}"?`)) return;
-                      setError('');
-                      try {
-                        await updateProc.mutateAsync({ id: r.id, data: { is_active: false } });
-                        setMessage('Procedure deactivated.');
-                      } catch (err) {
-                        setError(parseApiError(err));
-                      }
-                    }}
+                    className="btn-danger btn-sm"
+                    onClick={() => handleDeactivateProcedure(r)}
                   >
                     Deactivate
                   </button>
@@ -161,11 +143,10 @@ export default function SystemSettingsPage() {
             }`}
             onClick={() => {
               setTab(t);
-              if (t === 'email' && emailSettings.data && !emailForm.smtp_user) {
+              if (t === 'email' && emailSettings.data && !emailForm.test_email) {
                 setEmailForm((f) => ({
                   ...f,
-                  smtp_user: emailSettings.data.smtp_user || 'abayabayytchannel@gmail.com',
-                  test_email: emailSettings.data.smtp_user || 'abayabayytchannel@gmail.com',
+                  test_email: emailSettings.data.smtp_user || '',
                 }));
               }
             }}
@@ -203,68 +184,41 @@ export default function SystemSettingsPage() {
         <QueryState isLoading={emailSettings.isLoading} isError={emailSettings.isError} error={emailSettings.error}>
           <div className="card space-y-4 max-w-lg">
             <p className="text-sm text-slate-600">
-              Configure Gmail so forgot-password links are delivered to patients in their inbox
-              (not shown on the website).
+              Email is configured via server environment variables (
+              <code className="text-xs">EMAIL_HOST_USER</code>,{' '}
+              <code className="text-xs">EMAIL_HOST_PASSWORD</code>). See{' '}
+              <code className="text-xs">DEPLOYMENT.md</code> on Render/Vercel.
             </p>
-            <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
-              <li>Google Account → Security → 2-Step Verification → ON</li>
-              <li>App passwords → Mail → copy the 16-character password</li>
-              <li>Paste below and save</li>
-            </ol>
             {emailSettings.data?.smtp_ready ? (
-              <p className="text-sm font-medium text-emerald-700">Gmail is configured and ready.</p>
+              <p className="text-sm font-medium text-emerald-700">
+                SMTP ready — sender: {emailSettings.data.smtp_user || 'configured'}
+              </p>
             ) : (
-              <p className="text-sm font-medium text-amber-700">Gmail is not configured yet.</p>
+              <p className="text-sm font-medium text-amber-700">
+                {emailSettings.data?.setup_hint || 'SMTP is not configured yet.'}
+              </p>
             )}
-            {canManage ? (
-              <form onSubmit={handleSaveEmail} className="space-y-4">
-                <label className="label">
-                  Gmail address (sender)
-                  <input
-                    type="email"
-                    className="input"
-                    placeholder="abayabayytchannel@gmail.com"
-                    value={emailForm.smtp_user || emailSettings.data?.smtp_user || ''}
-                    onChange={(e) => setEmailForm((f) => ({ ...f, smtp_user: e.target.value }))}
-                    required
-                  />
-                </label>
-                <label className="label">
-                  Google App Password (16 characters, no spaces)
-                  <input
-                    type="password"
-                    className="input"
-                    placeholder={emailSettings.data?.password_configured ? '••••••••••••••••' : 'Paste app password'}
-                    value={emailForm.smtp_app_password}
-                    onChange={(e) => setEmailForm((f) => ({ ...f, smtp_app_password: e.target.value }))}
-                  />
-                </label>
+            {canManage && (
+              <div className="space-y-3">
                 <label className="label">
                   Send test email to
                   <input
                     type="email"
                     className="input"
-                    placeholder="abayabayytchannel@gmail.com"
+                    placeholder={emailSettings.data?.smtp_user || 'recipient@example.com'}
                     value={emailForm.test_email}
                     onChange={(e) => setEmailForm((f) => ({ ...f, test_email: e.target.value }))}
                   />
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  <button type="submit" className="btn-primary btn-sm" disabled={updateEmailSettings.isPending}>
-                    Save Gmail settings
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-outline btn-sm"
-                    onClick={handleTestEmail}
-                    disabled={testEmailSettings.isPending || !emailSettings.data?.smtp_ready}
-                  >
-                    Send test email
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <p className="text-sm text-slate-500">Only administrators can change email settings.</p>
+                <button
+                  type="button"
+                  className="btn-outline btn-sm"
+                  onClick={handleTestEmail}
+                  disabled={testEmailSettings.isPending || !emailSettings.data?.smtp_ready}
+                >
+                  Send test email
+                </button>
+              </div>
             )}
           </div>
         </QueryState>
@@ -311,7 +265,18 @@ export default function SystemSettingsPage() {
             </form>
           )}
           <QueryState isLoading={procedures.isLoading} isError={procedures.isError} error={procedures.error}>
-            <DataTable columns={procColumns} rows={procedures.data || []} />
+            <DataTable
+              columns={procColumns}
+              rows={procedures.data || []}
+              renderMobileCard={(r) => (
+                <ProcedureCard
+                  procedure={r}
+                  canManage={canManage}
+                  onEdit={setProcForm}
+                  onDeactivate={handleDeactivateProcedure}
+                />
+              )}
+            />
           </QueryState>
         </>
       )}

@@ -38,11 +38,11 @@ export default function TimeSlotPicker({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-600">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="min-w-0 text-sm text-slate-600">
           Auto-matched · {durationLabel} · {pencilHours}hr pencil booking
         </p>
-        <button type="button" className="btn-ghost btn-sm" onClick={onRefresh}>
+        <button type="button" className="btn-ghost btn-sm shrink-0 self-start sm:self-auto" onClick={onRefresh}>
           ↻ Refresh
         </button>
       </div>

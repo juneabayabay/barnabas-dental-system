@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { FaEnvelope, FaLock, FaUser, FaUserPlus } from 'react-icons/fa';
+import PatientAuthButton from '../../components/auth/patient/PatientAuthButton';
+import PatientAuthDivider from '../../components/auth/patient/PatientAuthDivider';
+import PatientAuthField from '../../components/auth/patient/PatientAuthField';
+import PatientAuthShell from '../../components/auth/patient/PatientAuthShell';
 import PasswordInput from '../../components/common/PasswordInput';
 import Toast from '../../components/common/Toast';
 import { useAuth } from '../../hooks/useAuth';
 import { parseApiError } from '../../utils/formatters';
 
 const REDIRECT_DELAY_MS = 3000;
-
-function formatLabel(field) {
-  return field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function clearPasswords(prev) {
   return { ...prev, password: '', password_confirm: '' };
@@ -85,6 +86,7 @@ export default function RegisterPage() {
           title={successToast.title}
           message={successToast.message}
           onDismiss={() => setSuccessToast(null)}
+          position="bottom"
         />
       )}
       {errorToast && (
@@ -93,70 +95,97 @@ export default function RegisterPage() {
           title={errorToast.title}
           message={errorToast.message}
           onDismiss={() => setErrorToast(null)}
+          position="bottom"
         />
       )}
 
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-sky-100 p-4">
-        <form className="card w-full max-w-md" onSubmit={handleSubmit}>
-          <h1 className="text-2xl font-bold text-slate-900">Patient Registration</h1>
-          <p className="mt-1 text-sm text-slate-500">Create your account to book appointments online.</p>
-          <div className="mt-6 space-y-4">
-            {['first_name', 'last_name', 'email'].map((field) => (
-              <label key={field} className="label">
-                {formatLabel(field)}
-                <input
-                  className="input"
-                  name={field}
-                  type={field === 'email' ? 'email' : 'text'}
-                  value={form[field]}
-                  onChange={handleChange}
-                  required
-                  autoComplete={field === 'email' ? 'email' : field}
-                  disabled={submitDisabled}
-                />
-              </label>
-            ))}
+      <PatientAuthShell>
+        <h1 className="patient-auth-title">Join our clinic</h1>
+        <p className="patient-auth-subhead">
+          Create your account and book your first appointment in seconds.
+        </p>
 
-            <label className="label">
+        <form onSubmit={handleSubmit}>
+          <PatientAuthField
+            icon={FaUser}
+            label="First Name"
+            name="first_name"
+            value={form.first_name}
+            onChange={handleChange}
+            autoComplete="given-name"
+            disabled={submitDisabled}
+          />
+
+          <PatientAuthField
+            icon={FaUser}
+            label="Last Name"
+            name="last_name"
+            value={form.last_name}
+            onChange={handleChange}
+            autoComplete="family-name"
+            disabled={submitDisabled}
+          />
+
+          <PatientAuthField
+            icon={FaEnvelope}
+            label="Email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            autoComplete="email"
+            disabled={submitDisabled}
+          />
+
+          <div className="patient-auth-field">
+            <label className="patient-auth-label" htmlFor="password">
               Password
+            </label>
+            <div className="patient-auth-input-wrap">
+              <FaLock className="patient-auth-input-icon" aria-hidden />
               <PasswordInput
+                id="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
                 autoComplete="new-password"
                 disabled={submitDisabled}
+                variant="patient"
               />
-            </label>
+            </div>
+          </div>
 
-            <label className="label">
+          <div className="patient-auth-field">
+            <label className="patient-auth-label" htmlFor="password_confirm">
               Confirm Password
+            </label>
+            <div className="patient-auth-input-wrap">
+              <FaLock className="patient-auth-input-icon" aria-hidden />
               <PasswordInput
+                id="password_confirm"
                 name="password_confirm"
                 value={form.password_confirm}
                 onChange={handleChange}
                 autoComplete="new-password"
                 disabled={submitDisabled}
+                variant="patient"
               />
-            </label>
-
-            <button type="submit" className="btn-primary w-full gap-2" disabled={submitDisabled}>
-              {loading && (
-                <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                  aria-hidden
-                />
-              )}
-              {loading ? 'Creating Account...' : 'Register'}
-            </button>
-            <p className="text-center text-sm">
-              Already have an account? <Link to="/login" className="text-sky-600">Patient login</Link>
-            </p>
-            <p className="text-center text-sm">
-              <Link to="/" className="text-slate-500">← Back to portal selection</Link>
-            </p>
+            </div>
           </div>
+
+          <PatientAuthButton loading={loading} icon={FaUserPlus} disabled={submitDisabled}>
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </PatientAuthButton>
         </form>
-      </div>
+
+        <PatientAuthDivider />
+        <p className="patient-auth-switch">
+          Already have an account? <Link to="/login">Patient login</Link>
+        </p>
+        <Link to="/" className="patient-auth-back">
+          ← Back to portal selection
+        </Link>
+      </PatientAuthShell>
     </>
   );
 }
